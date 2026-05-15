@@ -1,0 +1,6 @@
+{
+  "name": "Kutira-Kone",
+  "description": "A hyper-local marketplace for fabric scraps to promote zero-waste and circular economy among local tailors and artisans.",
+  "requestFramePermissions": ["camera", "geolocation"],
+  "majorCapabilities": []
+}

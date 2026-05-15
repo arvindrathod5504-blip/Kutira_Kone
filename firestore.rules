@@ -1,0 +1,60 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidScrap(data) {
+      return data.keys().hasAll(['imageUrl', 'material', 'size', 'location', 'ownerId', 'status', 'createdAt']) &&
+             data.keys().size() <= 10 &&
+             data.imageUrl is string && data.imageUrl.size() < 1000 &&
+             data.material in ['Silk', 'Cotton', 'Wool', 'Linen', 'Polyester', 'Other'] &&
+             data.size is number && data.size > 0 &&
+             data.location.lat is number && data.location.lng is number &&
+             data.ownerId == request.auth.uid &&
+             data.status in ['available', 'pending', 'swapped'] &&
+             data.createdAt == request.time;
+    }
+
+    match /scraps/{scrapId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(scrapId) && isValidScrap(request.resource.data);
+      allow update: if isSignedIn() && isValidId(scrapId) && 
+                      (isOwner(resource.data.ownerId) || 
+                       (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])));
+      allow delete: if isSignedIn() && isOwner(resource.data.ownerId);
+    }
+
+    function isValidSwap(data) {
+      return data.keys().hasAll(['scrapId', 'senderId', 'receiverId', 'status', 'createdAt']) &&
+             data.scrapId is string &&
+             data.senderId == request.auth.uid &&
+             data.receiverId is string &&
+             data.status == 'pending' &&
+             data.createdAt == request.time;
+    }
+
+    match /swaps/{swapId} {
+      allow read: if isSignedIn() && (isOwner(resource.data.senderId) || isOwner(resource.data.receiverId));
+      allow create: if isSignedIn() && isValidId(swapId) && isValidSwap(request.resource.data);
+      allow update: if isSignedIn() && (
+        (isOwner(resource.data.receiverId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])) ||
+        (isOwner(resource.data.senderId) && resource.data.status == 'pending' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'message']))
+      );
+      allow delete: if isSignedIn() && isOwner(resource.data.senderId) && resource.data.status == 'pending';
+    }
+  }
+}

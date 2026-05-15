@@ -1,0 +1,54 @@
+{
+  "entities": {
+    "Scrap": {
+      "title": "Fabric Scrap",
+      "description": "A piece of leftover fabric available for trade or sale.",
+      "type": "object",
+      "properties": {
+        "imageUrl": { "type": "string", "description": "URL of the fabric photo" },
+        "material": { "type": "string", "enum": ["Silk", "Cotton", "Wool", "Linen", "Polyester", "Other"] },
+        "size": { "type": "number", "description": "Size in meters" },
+        "color": { "type": "string" },
+        "description": { "type": "string" },
+        "location": {
+          "type": "object",
+          "properties": {
+            "lat": { "type": "number" },
+            "lng": { "type": "number" }
+          },
+          "required": ["lat", "lng"]
+        },
+        "ownerId": { "type": "string" },
+        "ownerEmail": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["available", "pending", "swapped"] }
+      },
+      "required": ["imageUrl", "material", "size", "location", "ownerId", "status", "createdAt"]
+    },
+    "SwapRequest": {
+      "title": "Swap Request",
+      "description": "A request to trade one fabric for another or just express interest.",
+      "type": "object",
+      "properties": {
+        "scrapId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "senderEmail": { "type": "string" },
+        "receiverId": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "accepted", "rejected"] },
+        "message": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["scrapId", "senderId", "receiverId", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/scraps/{scrapId}": {
+      "schema": "Scrap",
+      "description": "Global collection of all fabric scraps"
+    },
+    "/swaps/{swapId}": {
+      "schema": "SwapRequest",
+      "description": "Collection of swap requests between users"
+    }
+  }
+}
